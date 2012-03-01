@@ -9,16 +9,19 @@ module HandlebarsAssets
     def evaluate(scope, locals, &block)
       name = basename(scope.logical_path)
       compiled_hbs = Handlebars.precompile(data)
-
+      template_name = scope.logical_path.inspect
+      
       if name.start_with?('_')
         partial_name = name[1..-1].inspect
         <<-PARTIAL
           (function() {
             Handlebars.registerPartial(#{partial_name}, Handlebars.template(#{compiled_hbs}));
+            this.HandlebarsTemplates || (this.HandlebarsTemplates = {});
+            this.HandlebarsTemplates[#{template_name}] = Handlebars.template(#{compiled_hbs});
+            return HandlebarsTemplates[#{template_name}];
           }).call(this);
         PARTIAL
       else
-        template_name = scope.logical_path.inspect
         <<-TEMPLATE
           (function() {
             this.HandlebarsTemplates || (this.HandlebarsTemplates = {});
@@ -26,7 +29,7 @@ module HandlebarsAssets
             return HandlebarsTemplates[#{template_name}];
           }).call(this);
         TEMPLATE
-      end
+      end 
     end
 
     protected
